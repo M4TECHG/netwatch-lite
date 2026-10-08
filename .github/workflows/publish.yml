@@ -27,7 +27,7 @@ jobs:
             PKG="$(python -c 'import tomllib,pathlib;print(tomllib.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
             test "v$PKG" = "$TAG" || { echo "tag $TAG != package version v$PKG"; exit 1; }
           fi
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v6
         with:
           name: dist
           path: dist/
