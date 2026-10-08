@@ -1,0 +1,37 @@
+# NetWatch-Lite rules - every key is optional; omitted values fall back to built-in defaults.
+portscan:
+  enabled: true
+  window_seconds: 10
+  distinct_targets: 30        # distinct (host, port) pairs probed by SYN-only packets
+
+bruteforce:
+  enabled: true
+  window_seconds: 120
+  failed_logins: 8            # failures per (source, service) inside the window
+  spray_users: 5              # distinct usernames => password spraying
+  auth_ports: [21, 22, 23, 445, 3389, 5900]
+  connection_attempts: 25     # SYNs to one auth port (PCAP heuristic)
+
+dns:
+  enabled: true
+  window_seconds: 60
+  min_label_length: 16
+  entropy_threshold: 3.5
+  unique_subdomains: 40       # tunnelling: unique names under one domain in the window
+  avg_query_length: 50
+  txt_null_queries: 20
+  allowlist: [cloudfront.net, amazonaws.com, akamaiedge.net, googleusercontent.com]
+
+arp:
+  enabled: true
+  gateways: ["192.168.10.1"]  # a changed binding for these IPs becomes CRITICAL
+  ips_per_mac: 6
+  ignore_macs: []             # e.g. VRRP/HSRP virtual MACs
+
+rogue_dhcp:
+  enabled: true
+  allowed_servers: ["192.168.10.2"]
+
+new_device:
+  enabled: true               # needs --inventory FILE (or known_macs below)
+  known_macs: []

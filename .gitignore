@@ -1,0 +1,15 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+.venv/
+demo_output/
+dist/
+build/
+# never commit real captures or logs
+*.real.pcap
+private/
+# output written by the documented commands (CI writes these in the workspace)
+/report.html
+/report.json
+/report.csv
+/_shots/

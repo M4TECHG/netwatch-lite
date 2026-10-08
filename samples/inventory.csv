@@ -1,0 +1,7 @@
+# mac,name
+aa:bb:cc:00:00:01,gateway
+aa:bb:cc:00:00:02,dhcp
+aa:bb:cc:00:00:05,server
+aa:bb:cc:00:00:20,pc-sales
+aa:bb:cc:00:00:31,pc-warehouse
+de:ad:be:ef:00:66,lab-kali

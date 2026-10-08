@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netwatch-lite"
+version = "0.1.0"
+description = "Lightweight network threat detection for PCAP and auth logs, mapped to MITRE ATT&CK, with Splunk export"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Mir Mohammad Mousavi" }]
+keywords = ["network-security", "soc", "pcap", "wireshark", "splunk", "mitre-attack",
+            "blue-team", "ids", "detection-engineering"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Information Technology",
+  "Intended Audience :: System Administrators",
+  "License :: OSI Approved :: MIT License",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Security",
+  "Topic :: System :: Networking :: Monitoring",
+  "Natural Language :: Persian",
+]
+dependencies = ["scapy>=2.5", "PyYAML>=6", "Jinja2>=3.1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "ruff>=0.6"]
+
+[project.scripts]
+netwatch = "netwatch.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/M4TECHG/netwatch-lite"
+Repository = "https://github.com/M4TECHG/netwatch-lite"
+Issues = "https://github.com/M4TECHG/netwatch-lite/issues"
+Changelog = "https://github.com/M4TECHG/netwatch-lite/blob/main/CHANGELOG.md"
+Documentation = "https://github.com/M4TECHG/netwatch-lite/tree/main/docs"
+
+[tool.setuptools.packages.find]
+include = ["netwatch*"]
+
+[tool.setuptools.package-data]
+netwatch = ["templates/*.j2", "py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = ["demo_output", "demo_output_en"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # import sorting
+  "B",    # bugbear (common mistakes)
+  "UP",   # pyupgrade
+  "SIM",  # simplifications
+  "C4",   # comprehensions
+  "RUF",  # ruff-specific
+  "S",    # bandit-ish security
+]
+ignore = [
+  "S101",   # assert is fine, this is a test suite
+  "S603",   # subprocess call: scapy does it internally
+  "B905",   # zip(..., strict=) needs py3.10+ — we are, but keep the noise down
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S105", "S106", "S311"]       # fixtures are not secrets, RNGs are not cryptography
+"netwatch/samples.py" = ["S311"]           # deterministic RNG, not cryptography
+"netwatch/report/exporters.py" = ["RUF001", "RUF002", "RUF003"]  # Persian UI strings

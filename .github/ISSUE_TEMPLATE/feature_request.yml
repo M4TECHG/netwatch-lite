@@ -1,0 +1,50 @@
+name: Feature request
+description: Suggest a new detection, parser, output format or report improvement
+title: "[feat] "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check the roadmap in the README first — some of these are already planned.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - New detection rule
+        - New parser (log source / capture format)
+        - New output (SIEM, webhook, file format)
+        - HTML report UX
+        - CLI ergonomics
+        - Performance / scalability
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem does this solve?
+      description: What can you not do today, and how often does that matter?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like to happen?
+      description: If it is a detection, describe the signal and the false-positive sources you foresee.
+      render: markdown
+    validations:
+      required: true
+  - type: textarea
+    id: data
+    attributes:
+      label: MITRE ATT&CK mapping / references
+      description: Technique IDs or links, if applicable.
+      placeholder: T1557.001 - LLMNR/NBT-NS poisoning
+  - type: checkboxes
+    id: willing
+    attributes:
+      label: Contribution
+      options:
+        - label: I would like to open a pull request for this

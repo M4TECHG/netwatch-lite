@@ -1,0 +1,246 @@
+{
+  "tool": "netwatch-lite",
+  "version": "0.1.0",
+  "files": [
+    "demo_output_en\\demo.pcap",
+    "demo_output_en\\demo_auth.log"
+  ],
+  "total_events": 317,
+  "by_kind": {
+    "dns": 106,
+    "tcp": 181,
+    "arp": 3,
+    "dhcp": 2,
+    "auth": 25
+  },
+  "first_ts": 1791194400.0,
+  "last_ts": 1791194630.0,
+  "alerts": [
+    {
+      "id": "NW-0001",
+      "rule": "bruteforce",
+      "severity": "critical",
+      "title": "Successful SSH login after brute force from 192.168.10.66",
+      "description": "Account 'deploy' authenticated successfully after 24 failures from the same source.",
+      "src": "192.168.10.66",
+      "first_seen": 1791194560.0,
+      "last_seen": 1791194560.0,
+      "count": 1,
+      "mitre": [
+        {
+          "id": "T1110",
+          "name": "Brute Force",
+          "tactic": "Credential Access",
+          "url": "https://attack.mitre.org/techniques/T1110/"
+        },
+        {
+          "id": "T1078",
+          "name": "Valid Accounts",
+          "tactic": "Defense Evasion / Persistence",
+          "url": "https://attack.mitre.org/techniques/T1078/"
+        }
+      ],
+      "evidence": [
+        "user=deploy"
+      ],
+      "recommendation": "Treat the account as compromised: reset credentials, kill active sessions and audit activity after this timestamp."
+    },
+    {
+      "id": "NW-0002",
+      "rule": "portscan",
+      "severity": "high",
+      "title": "Port scan from 192.168.10.66",
+      "description": "192.168.10.66 sent SYN-only probes to 30 distinct targets within 10s: vertical scan (many ports on one host).",
+      "src": "192.168.10.66",
+      "first_seen": 1791194460.0,
+      "last_seen": 1791194465.95,
+      "count": 120,
+      "mitre": [
+        {
+          "id": "T1046",
+          "name": "Network Service Discovery",
+          "tactic": "Discovery",
+          "url": "https://attack.mitre.org/techniques/T1046/"
+        }
+      ],
+      "evidence": [
+        "hosts=1 ports=30 sample_ports=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"
+      ],
+      "recommendation": "Verify whether the source is an authorised scanner; otherwise isolate the host and review firewall logs for follow-up connections."
+    },
+    {
+      "id": "NW-0003",
+      "rule": "bruteforce",
+      "severity": "high",
+      "title": "Password spraying against SSH from 192.168.10.66",
+      "description": "8 failed logins in 120s targeting 8 account(s).",
+      "src": "192.168.10.66",
+      "first_seen": 1791194500.0,
+      "last_seen": 1791194546.0,
+      "count": 24,
+      "mitre": [
+        {
+          "id": "T1110.003",
+          "name": "Password Spraying",
+          "tactic": "Credential Access",
+          "url": "https://attack.mitre.org/techniques/T1110/003/"
+        }
+      ],
+      "evidence": [
+        "users=['admin', 'deploy', 'oracle', 'pi', 'root', 'test', 'ubuntu', 'user']"
+      ],
+      "recommendation": "Block the source, enforce lockout / MFA, and review accounts that were targeted."
+    },
+    {
+      "id": "NW-0004",
+      "rule": "arp",
+      "severity": "high",
+      "title": "ARP spoofing: 192.168.10.1 changed MAC aa:bb:cc:00:00:01 -> de:ad:be:ef:00:66",
+      "description": "192.168.10.1 was first bound to aa:bb:cc:00:00:01 but de:ad:be:ef:00:66 now claims it.",
+      "src": "de:ad:be:ef:00:66",
+      "first_seen": 1791194540.0,
+      "last_seen": 1791194540.0,
+      "count": 1,
+      "mitre": [
+        {
+          "id": "T1557.002",
+          "name": "Adversary-in-the-Middle: ARP Cache Poisoning",
+          "tactic": "Credential Access",
+          "url": "https://attack.mitre.org/techniques/T1557/002/"
+        }
+      ],
+      "evidence": [
+        "original=aa:bb:cc:00:00:01",
+        "new=de:ad:be:ef:00:66"
+      ],
+      "recommendation": "Enable Dynamic ARP Inspection / port security on the switch and verify which port the new MAC is on."
+    },
+    {
+      "id": "NW-0005",
+      "rule": "dns",
+      "severity": "high",
+      "title": "Possible DNS tunnelling to evil-tunnel.com from 192.168.10.31",
+      "description": "avg query length 66; 20 TXT/NULL queries.",
+      "src": "192.168.10.31",
+      "first_seen": 1791194560.0,
+      "last_seen": 1791194591.6,
+      "count": 80,
+      "mitre": [
+        {
+          "id": "T1071.004",
+          "name": "Application Layer Protocol: DNS",
+          "tactic": "Command and Control",
+          "url": "https://attack.mitre.org/techniques/T1071/004/"
+        },
+        {
+          "id": "T1048",
+          "name": "Exfiltration Over Alternative Protocol",
+          "tactic": "Exfiltration",
+          "url": "https://attack.mitre.org/techniques/T1048/"
+        }
+      ],
+      "evidence": [
+        "ub3wgkfatmkmgfkzpd3o2v56meeeixrybapdhzrsja2t7xcu.t.evil-tunnel.com",
+        "dfdx32z6la7lme3mfk2ofol3b3tgusd7xubxvngbdzzczac3.t.evil-tunnel.com",
+        "fu4nf5xxcjjgo2kimqy6vexnk6rfr6qjgnjkjcadpwhtme3y.t.evil-tunnel.com",
+        "fmlxndpgsususcq2uvfrrcudi377vkyb4emytn724izyyleq.t.evil-tunnel.com"
+      ],
+      "recommendation": "Block or sinkhole the domain and inspect the host for tunnelling tools (iodine, dnscat2)."
+    },
+    {
+      "id": "NW-0006",
+      "rule": "rogue_dhcp",
+      "severity": "medium",
+      "title": "Multiple DHCP servers answering on the same network",
+      "description": "Servers seen: 192.168.10.2, 192.168.10.66. Set allowed_servers to pinpoint the rogue one.",
+      "src": "192.168.10.2,192.168.10.66",
+      "first_seen": 1791194435.0,
+      "last_seen": 1791194435.0,
+      "count": 1,
+      "mitre": [
+        {
+          "id": "T1557.003",
+          "name": "Adversary-in-the-Middle: DHCP Spoofing",
+          "tactic": "Credential Access",
+          "url": "https://attack.mitre.org/techniques/T1557/003/"
+        }
+      ],
+      "evidence": [
+        "192.168.10.2 mac=aa:bb:cc:00:00:02",
+        "192.168.10.66 mac=de:ad:be:ef:00:66"
+      ],
+      "recommendation": "Identify the unauthorised server and enable DHCP snooping."
+    },
+    {
+      "id": "NW-0007",
+      "rule": "bruteforce",
+      "severity": "medium",
+      "title": "Possible brute force on 192.168.10.5:22 from 192.168.10.66",
+      "description": "25 new TCP connections to an authentication port within 120s (connection-rate heuristic, no auth log available).",
+      "src": "192.168.10.66",
+      "first_seen": 1791194461.05,
+      "last_seen": 1791194529.0,
+      "count": 41,
+      "mitre": [
+        {
+          "id": "T1110",
+          "name": "Brute Force",
+          "tactic": "Credential Access",
+          "url": "https://attack.mitre.org/techniques/T1110/"
+        }
+      ],
+      "evidence": [
+        "dst=192.168.10.5:22"
+      ],
+      "recommendation": "Correlate with the target host's authentication logs."
+    },
+    {
+      "id": "NW-0008",
+      "rule": "dns",
+      "severity": "medium",
+      "title": "DGA-like domain lookups from 192.168.10.31",
+      "description": "3 distinct domains with random-looking names were queried (high Shannon entropy).",
+      "src": "192.168.10.31",
+      "first_seen": 1791194560.0,
+      "last_seen": 1791194610.0,
+      "count": 6,
+      "mitre": [
+        {
+          "id": "T1568.002",
+          "name": "Dynamic Resolution: Domain Generation Algorithms",
+          "tactic": "Command and Control",
+          "url": "https://attack.mitre.org/techniques/T1568/002/"
+        }
+      ],
+      "evidence": [
+        "i6n9mvxfku58krv97j.com",
+        "qj33m0m4pnu7lfk7bp.biz",
+        "wf2fp0760ab8waxoa4.info"
+      ],
+      "recommendation": "Check the host for malware; sinkhole the domains at the resolver."
+    },
+    {
+      "id": "NW-0009",
+      "rule": "new_device",
+      "severity": "low",
+      "title": "Unknown device 02:11:22:33:44:55",
+      "description": "MAC not in inventory (IP seen: 192.168.10.77).",
+      "src": "02:11:22:33:44:55",
+      "first_seen": 1791194630.0,
+      "last_seen": 1791194630.0,
+      "count": 1,
+      "mitre": [
+        {
+          "id": "T1200",
+          "name": "Hardware Additions",
+          "tactic": "Initial Access",
+          "url": "https://attack.mitre.org/techniques/T1200/"
+        }
+      ],
+      "evidence": [
+        "ip=192.168.10.77"
+      ],
+      "recommendation": "Identify the owner; add to inventory or disconnect (802.1X / port security)."
+    }
+  ]
+}

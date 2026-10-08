@@ -1,0 +1,1631 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<meta name="description" content="NetWatch-Lite Report — NetWatch-Lite">
+<title>NetWatch-Lite Report</title>
+<script>
+/* Set the theme before first paint so there is no flash of the wrong colour scheme.
+   `?theme=dark` / `?theme=light` pins the theme for that page view without overwriting the
+   visitor's stored preference - handy when sharing or screenshotting a specific version. */
+(function () {
+  var q = null;
+  try { q = new URLSearchParams(location.search).get("theme"); } catch (e) {}
+  if (q !== "light" && q !== "dark") q = null;
+  if (q) document.documentElement.setAttribute("data-theme-pinned", q);
+  var t = q;
+  try { if (!t) t = localStorage.getItem("nw-theme"); } catch (e) {}
+  if (t !== "light" && t !== "dark") {
+    t = window.matchMedia && window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+  }
+  document.documentElement.setAttribute("data-theme", t);
+})();
+</script>
+<style>
+/* ============================================================ tokens */
+:root{
+  --bg:#0b0f16; --bg-soft:#0e131c; --card:#131a26; --card-soft:#18202e;
+  --fg:#e8edf5; --fg-2:#b9c4d4; --mut:#93a1b6;
+  --bd:#232c3b; --bd-2:#2e3a4d;
+  --accent:#5b96ff; --accent-2:#8ab4ff; --accent-fg:#08111f; --on-sev:#08111f;
+  --ok:#22c55e; --focus:#7aa7ff;
+  --critical:#ff6b7d; --high:#ff9a5c; --medium:#fbc649; --low:#61d4ff; --info:#9aa8bd;
+  --critical-bg:rgba(255,107,125,.14); --high-bg:rgba(255,154,92,.14);
+  --medium-bg:rgba(251,198,73,.14); --low-bg:rgba(97,212,255,.13); --info-bg:rgba(154,168,189,.14);
+  --shadow:0 1px 2px rgba(0,0,0,.35), 0 8px 24px -16px rgba(0,0,0,.6);
+  --r:12px; --r-sm:8px;
+  --topbar-h:58px; --bar-h:56px;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue","Vazirmatn",Tahoma,Arial,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+}
+[data-theme="light"]{
+  --bg:#f2f5f9; --bg-soft:#eaeef5; --card:#ffffff; --card-soft:#f7f9fc;
+  --fg:#0f172a; --fg-2:#3d4a5f; --mut:#5b6b80;
+  --bd:#dde4ed; --bd-2:#cbd5e1;
+  --accent:#1d5fd8; --accent-2:#1747a8; --accent-fg:#ffffff; --on-sev:#ffffff;
+  --ok:#15803d; --focus:#1d5fd8;
+  --critical:#d10f2e; --high:#c2410c; --medium:#92500a; --low:#0369a1; --info:#475569;
+  --critical-bg:rgba(209,15,46,.09); --high-bg:rgba(194,65,12,.09);
+  --medium-bg:rgba(161,98,7,.10); --low-bg:rgba(3,105,161,.09); --info-bg:rgba(71,85,105,.09);
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px -18px rgba(15,23,42,.4);
+}
+*,*::before,*::after{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.6 var(--sans);
+  font-feature-settings:"tnum" 0;overflow-wrap:break-word}
+:where(a){color:var(--accent);text-underline-offset:3px}
+:where(button,select,input,summary){font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+::selection{background:var(--accent);color:var(--accent-fg)}
+.skip{position:absolute;inset-inline-start:12px;top:-60px;z-index:100;background:var(--accent);
+  color:var(--accent-fg);padding:9px 16px;border-radius:0 0 var(--r-sm) var(--r-sm);font-weight:600;
+  text-decoration:none;transition:top .15s}
+.skip:focus{top:0}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+.i{width:1em;height:1em;flex:none;stroke:currentColor;fill:none;stroke-width:1.75;
+  stroke-linecap:round;stroke-linejoin:round;vertical-align:-.125em}
+
+/* ============================================================ layout */
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+main{padding-bottom:56px}
+section{scroll-margin-top:calc(var(--topbar-h) + var(--bar-h) + 16px)}
+h1,h2,h3{line-height:1.25;margin:0}
+h2{font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--mut);
+  font-weight:700;margin:34px 0 14px;display:flex;align-items:center;gap:10px}
+h2::after{content:"";flex:1;height:1px;background:var(--bd)}
+/* Secondary section heading (MITRE coverage, timeline, ...) */
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);
+  font-weight:700;margin:26px 0 10px}
+.eyebrow.tight{margin:0}
+/* Arabic-script labels must not be letter-spaced or upper-cased: it loosens the joins. */
+[dir="rtl"] .eyebrow,[dir="rtl"] h2,[dir="rtl"] .panel h3,[dir="rtl"] .block h4,
+[dir="rtl"] .badge,[dir="rtl"] .sevrow .lbl{letter-spacing:normal;text-transform:none}
+.sub{color:var(--mut);font-size:13px}
+code,.mono{font-family:var(--mono);font-size:.9em;direction:ltr;unicode-bidi:embed;
+  background:rgba(127,127,127,.16);padding:1px 6px;border-radius:5px;white-space:nowrap}
+.ltr{direction:ltr;unicode-bidi:isolate;display:inline-block}
+
+/* ============================================================ topbar */
+.topbar{position:sticky;top:0;z-index:40;background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--bd)}
+.topbar .wrap{display:flex;align-items:center;gap:14px;min-height:var(--topbar-h)}
+.brand{display:flex;align-items:center;gap:9px;font-weight:700;letter-spacing:-.01em;
+  text-decoration:none;color:var(--fg);white-space:nowrap}
+.brand-w{margin:0;font-size:inherit;font-weight:400;min-width:0}
+.brand .i{width:22px;height:22px;color:var(--accent);stroke-width:1.6}
+.brand small{font-weight:500;color:var(--mut);font-size:11.5px;padding:2px 6px;
+  border:1px solid var(--bd);border-radius:999px}
+.runmeta{display:flex;gap:16px;flex:1;min-width:0;color:var(--mut);font-size:12.5px;
+  align-items:center;overflow:hidden}
+.runmeta span{display:flex;align-items:center;gap:6px;min-width:0}
+.runmeta .i{width:14px;height:14px}
+.runmeta b{color:var(--fg-2);font-weight:600}
+.runmeta .clip{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:34ch}
+.tools{display:flex;gap:6px;align-items:center}
+.ibtn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-width:36px;height:34px;
+  padding:0 10px;background:var(--card);border:1px solid var(--bd);border-radius:var(--r-sm);
+  cursor:pointer;color:var(--fg-2);font-size:13px;transition:background .15s,border-color .15s,color .15s}
+.ibtn:hover{background:var(--card-soft);border-color:var(--bd-2);color:var(--fg)}
+.ibtn .i{width:16px;height:16px;transition:transform .18s}
+.ibtn:active{transform:translateY(1px)}
+.ibtn.is-open .i{transform:rotate(180deg)}
+[data-theme="light"] .theme-sun{display:none}
+[data-theme="dark"] .theme-moon{display:none}
+
+/* ============================================================ kpi */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-top:22px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;
+  position:relative;overflow:hidden;box-shadow:var(--shadow)}
+.kpi::before{content:"";position:absolute;inset-block:0;inset-inline-start:0;width:3px;background:var(--tone,var(--bd-2))}
+.kpi .v{font-size:27px;font-weight:700;letter-spacing:-.02em;line-height:1.15;display:block}
+.kpi .k{color:var(--mut);font-size:12px;margin-top:3px;display:block}
+.kpi .d{font-size:11.5px;color:var(--fg-2);margin-top:7px;display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.kpi-sm .v{font-size:15px;line-height:1.55;overflow-wrap:anywhere;word-break:normal}
+.dot{width:7px;height:7px;border-radius:50%;display:inline-block;background:currentColor}
+
+/* ============================================================ panels */
+.panels{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:12px}
+.panel{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);padding:15px 16px;
+  box-shadow:var(--shadow);min-width:0}
+.panel h3{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut);
+  font-weight:700;margin-bottom:12px}
+.sevrow{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;width:100%;
+  background:none;border:0;padding:5px 6px;border-radius:7px;cursor:pointer;text-align:start;
+  transition:background .13s}
+.sevrow:hover{background:var(--card-soft)}
+.sevrow[aria-pressed="true"]{background:var(--card-soft);box-shadow:inset 0 0 0 1px var(--bd-2)}
+.sevrow .lbl{font-size:11.5px;font-weight:700;letter-spacing:.04em;min-width:62px;
+  color:var(--c);text-transform:uppercase}
+.track{height:9px;border-radius:5px;background:rgba(127,127,127,.16);overflow:hidden}
+.track i{display:block;height:100%;border-radius:5px;background:var(--c);min-width:3px;
+  transition:width .4s cubic-bezier(.22,1,.36,1)}
+.sevrow .n{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;min-width:22px;text-align:end}
+.sevrow[aria-pressed="false"] .track i{opacity:.42}
+
+.mrow{display:flex;align-items:center;gap:9px;padding:5px 0;font-size:13px}
+.mrow .n{font-variant-numeric:tabular-nums;font-weight:600;min-width:34px;text-align:end;color:var(--fg-2)}
+.mrow .t{flex:1;min-width:0}
+.meter{height:6px;border-radius:3px;background:rgba(127,127,127,.16);overflow:hidden;margin-top:4px}
+.meter i{display:block;height:100%;background:var(--accent);border-radius:3px;
+  transition:width .4s cubic-bezier(.22,1,.36,1)}
+.mrow .t span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ============================================================ timeline */
+.timeline{background:var(--card);border:1px solid var(--bd);border-radius:var(--r);
+  padding:18px 16px 12px;box-shadow:var(--shadow);margin-top:12px}
+/* Time always flows left -> right, whatever the reading direction of the page. */
+.tl-track{position:relative;height:54px;margin:6px 4px 0;direction:ltr}
+.tl-track::before{content:"";position:absolute;inset-inline:0;top:50%;height:2px;transform:translateY(-50%);
+  background:linear-gradient(90deg,transparent,var(--bd-2) 8%,var(--bd-2) 92%,transparent)}
+.tl-dot{position:absolute;top:50%;left:var(--x);width:30px;height:30px;margin:-15px 0 0 -15px;
+  border-radius:50%;display:block;scroll-margin-top:180px}
+.tl-dot::before{content:"";position:absolute;left:50%;top:50%;width:13px;height:13px;
+  margin:-6.5px 0 0 -6.5px;border-radius:50%;background:var(--c);border:2px solid var(--card);
+  box-shadow:0 0 0 1px var(--c);transition:transform .15s}
+.tl-dot:hover::before,.tl-dot:focus-visible::before{transform:scale(1.55)}
+.tl-axis{display:flex;justify-content:space-between;font-size:11.5px;color:var(--mut);
+  font-variant-numeric:tabular-nums;margin-top:2px;direction:ltr}
+.tl-legend{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--mut);margin-top:10px}
+.tl-legend b{font-weight:600;color:var(--fg-2);display:flex;align-items:center;gap:5px}
+
+/* ============================================================ mitre */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;padding:6px 11px;border-radius:999px;
+  background:var(--card);border:1px solid var(--bd);font-size:12.5px;text-decoration:none;
+  color:var(--fg-2);transition:border-color .15s,background .15s}
+.chip:hover{border-color:var(--accent);background:var(--card-soft);color:var(--fg)}
+.chip .tid{font-family:var(--mono);font-weight:700;color:var(--accent);direction:ltr}
+.chip .c{font-variant-numeric:tabular-nums;color:var(--mut);font-size:11.5px}
+.chip .i{width:12px;height:12px;opacity:.7}
+
+/* ============================================================ toolbar */
+.toolbar{position:sticky;top:var(--topbar-h);z-index:30;background:color-mix(in srgb,var(--bg) 92%,transparent);
+  backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--bd);border-radius:var(--r);padding:10px;margin-top:12px;
+  display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+.search{position:relative;flex:1;min-width:210px}
+.search .i{position:absolute;inset-inline-start:11px;top:50%;transform:translateY(-50%);
+  width:15px;height:15px;color:var(--mut);pointer-events:none}
+.search input{width:100%;height:36px;padding:0 34px;border-radius:var(--r-sm);
+  background:var(--card);border:1px solid var(--bd);color:var(--fg);font-size:13.5px}
+.search input::placeholder{color:var(--mut)}
+.search input:hover{border-color:var(--bd-2)}
+.search kbd{position:absolute;inset-inline-end:9px;top:50%;transform:translateY(-50%)}
+kbd{font-family:var(--mono);font-size:10.5px;padding:1.5px 5px;border-radius:4px;
+  border:1px solid var(--bd-2);background:var(--card-soft);color:var(--mut);line-height:1.5}
+.fchip{display:inline-flex;align-items:center;gap:6px;height:32px;padding:0 11px;border-radius:999px;
+  background:var(--card);border:1px solid var(--bd);cursor:pointer;font-size:12.5px;font-weight:600;
+  color:var(--fg-2);transition:all .13s}
+.fchip:hover{border-color:var(--bd-2);color:var(--fg)}
+.fchip[aria-pressed="true"]{background:var(--c,var(--accent));border-color:var(--c,var(--accent));
+  color:var(--on-sev)}
+.fchip .n{font-variant-numeric:tabular-nums;opacity:.85;font-weight:700}
+.fchip[aria-pressed="false"] .n{color:var(--c);opacity:1}
+select.sel{height:32px;padding:0 26px 0 10px;border-radius:var(--r-sm);background:var(--card);
+  border:1px solid var(--bd);font-size:12.5px;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2393a1b6' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 7px center;background-size:13px}
+[dir="rtl"] select.sel{background-position:left 7px center;padding:0 10px 0 26px}
+.count{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums;margin-inline-start:auto}
+.count b{color:var(--fg);font-weight:700}
+/* Sort + action buttons: kept together so the controls never strand on their own row. */
+.acts{display:flex;align-items:center;gap:9px;flex:0 0 auto}
+.spacer{flex:1}
+
+/* ============================================================ alerts */
+.queue{display:flex;flex-direction:column;gap:10px;margin-top:12px}
+.alert{background:var(--card);border:1px solid var(--bd);border-inline-start:4px solid var(--c);
+  border-radius:var(--r);box-shadow:var(--shadow);scroll-margin-top:calc(var(--topbar-h) + var(--bar-h) + 20px);
+  overflow:hidden}
+.alert[hidden]{display:none}
+.alert > summary{list-style:none;cursor:pointer;padding:13px 16px;display:grid;
+  grid-template-columns:auto 1fr auto;gap:4px 12px;align-items:start}
+.alert > summary::-webkit-details-marker{display:none}
+.alert > summary:hover{background:var(--card-soft)}
+.alert[open] > summary{border-bottom:1px solid var(--bd);background:var(--card-soft)}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:2.5px 9px;border-radius:6px;
+  background:var(--bg);border:1px solid var(--c);color:var(--c);font-size:10.5px;font-weight:800;
+  letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+.badge .dot{width:6px;height:6px}
+.a-head{min-width:0}
+.a-title{font-size:14.5px;font-weight:650;line-height:1.45;display:block;margin:0}
+.a-meta{display:flex;flex-wrap:wrap;gap:5px 14px;margin-top:5px;font-size:11.5px;color:var(--mut)}
+.a-meta span{display:flex;align-items:center;gap:5px}
+.a-meta .i{width:12.5px;height:12.5px}
+.rule-name{color:var(--fg-2);font-weight:600}
+.chev{color:var(--mut);transition:transform .18s;margin-top:2px}
+.chev .i{width:17px;height:17px}
+.alert[open] .chev{transform:rotate(180deg)}
+.a-body{padding:14px 16px 16px;display:flex;flex-direction:column;gap:13px}
+.a-body p{margin:0;font-size:13.5px;color:var(--fg-2);line-height:1.65}
+.a-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.block h4{margin:0 0 7px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--mut);font-weight:700}
+.evi{display:flex;flex-direction:column;gap:5px;align-items:flex-start}
+.evi code{white-space:normal;word-break:break-all;max-width:100%}
+.rec{display:flex;gap:10px;padding:11px 13px;border-radius:var(--r-sm);
+  background:var(--bg);border:1px dashed var(--bd-2);font-size:13.5px;color:var(--fg-2);line-height:1.6}
+.rec .i{width:16px;height:16px;color:var(--accent);flex:none;margin-top:3px}
+.a-actions{display:flex;gap:8px;flex-wrap:wrap}
+.mini{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 11px;border-radius:7px;
+  background:var(--card-soft);border:1px solid var(--bd);cursor:pointer;font-size:12px;color:var(--fg-2);
+  transition:all .13s}
+.mini:hover{border-color:var(--accent);color:var(--fg)}
+.mini .i{width:13px;height:13px}
+.mini.ok{border-color:var(--ok);color:var(--ok)}
+
+/* ============================================================ states */
+.empty{background:var(--card);border:1px dashed var(--bd-2);border-radius:var(--r);
+  padding:44px 24px;text-align:center;color:var(--mut)}
+.empty .i{width:34px;height:34px;color:var(--ok);stroke-width:1.5;margin-bottom:10px}
+.empty h3{font-size:15px;color:var(--fg);margin-bottom:5px;font-weight:650}
+.empty[hidden]{display:none}
+.notice{display:flex;gap:9px;align-items:flex-start;background:var(--card-soft);
+  border:1px solid var(--bd);border-radius:var(--r-sm);padding:10px 13px;font-size:12.5px;
+  color:var(--mut);margin-top:12px}
+.notice .i{width:15px;height:15px;flex:none;margin-top:2px;color:var(--accent)}
+
+/* ============================================================ footer */
+footer{border-top:1px solid var(--bd);padding:20px 0 34px;color:var(--mut);font-size:12.5px}
+footer .wrap{display:flex;gap:8px 20px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+footer a{color:var(--fg-2)}
+
+/* ============================================================ dialog */
+dialog{border:1px solid var(--bd);border-radius:var(--r);background:var(--card);color:var(--fg);
+  padding:0;max-width:440px;width:calc(100% - 32px);box-shadow:0 24px 60px -20px rgba(0,0,0,.7)}
+dialog::backdrop{background:rgba(4,8,14,.66);backdrop-filter:blur(3px)}
+.dlg-h{display:flex;align-items:center;justify-content:space-between;padding:15px 17px;
+  border-bottom:1px solid var(--bd)}
+.dlg-h h3{font-size:14.5px;font-weight:650}
+.dlg-b{padding:14px 17px 18px;display:flex;flex-direction:column;gap:9px}
+.srow{display:flex;align-items:center;gap:11px;font-size:13px;color:var(--fg-2)}
+.srow .keys{display:flex;gap:4px;min-width:74px}
+.srow .k{flex:1;text-align:center}
+
+/* ============================================================ responsive */
+@media (max-width:1080px){.kpis{grid-template-columns:repeat(3,1fr)}.panels{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){
+  .panels{grid-template-columns:1fr}
+  .runmeta{display:none}
+  .tools{margin-inline-start:auto}
+  .a-grid{grid-template-columns:1fr}
+}
+@media (max-width:640px){
+  .wrap{padding:0 14px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .kpi .v{font-size:23px}
+  .toolbar{gap:7px;padding:9px}
+  .acts{gap:7px}
+  .search{flex-basis:100%}
+  .count{margin-inline-start:0;flex-basis:100%}
+  .alert > summary{grid-template-columns:1fr auto;gap:6px}
+  .badge{grid-column:1;justify-self:start}
+  .chev{grid-column:2;grid-row:1}
+  .a-head{grid-column:1 / -1}
+  h2{font-size:13.5px}
+  section{scroll-margin-top:170px}
+  .ibtn .lbl{display:none}
+  .ibtn{min-width:34px;padding:0 8px}
+}
+@media (max-width:400px){.kpis{grid-template-columns:1fr}}
+
+/* ============================================================ motion */
+@media (prefers-reduced-motion:no-preference){
+  @keyframes rise{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+  .kpi,.panel,.timeline,.alert{animation:rise .34s cubic-bezier(.22,1,.36,1) backwards}
+  .kpi:nth-child(2){animation-delay:.03s}.kpi:nth-child(3){animation-delay:.06s}
+  .kpi:nth-child(4){animation-delay:.09s}.kpi:nth-child(5){animation-delay:.12s}
+  .panel:nth-child(2){animation-delay:.05s}.panel:nth-child(3){animation-delay:.1s}
+  html{scroll-behavior:smooth}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ============================================================ print */
+@media print{
+  :root{--bg:#fff;--card:#fff;--card-soft:#fff;--fg:#000;--fg-2:#222;--mut:#444;
+        --bd:#ccc;--bd-2:#bbb;--shadow:none;--on-sev:#fff;--critical:#b00020;--high:#c2410c;
+        --medium:#92500a;--low:#035a8f;--info:#333}
+  body{background:#fff;font-size:11pt}
+  .topbar,.toolbar,.a-actions,.skip,dialog,.noscript-hint{display:none!important}
+  section{scroll-margin:0}
+  .kpis{grid-template-columns:repeat(5,1fr)}
+  .panels{grid-template-columns:1.25fr 1fr 1fr}
+  .alert{break-inside:avoid;box-shadow:none;border:1px solid #ccc;page-break-inside:avoid}
+  .alert > summary{cursor:default;background:#fafafa!important}
+  .queue{gap:8px}
+  h2{margin-top:18px}
+  a{text-decoration:none;color:#000}
+  .chip .tid{color:#000}
+}
+</style>
+</head>
+<body>
+
+<svg class="sprite" aria-hidden="true" focusable="false"><defs>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7.5 3v5.2c0 4.6-3.1 8-7.5 9.3-4.4-1.3-7.5-4.7-7.5-9.3V6L12 3z"/><path d="M9 12.2l2.1 2.1L15.2 10"/></symbol>
+<symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="M15.8 15.8L20.5 20.5"/></symbol>
+<symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.2 5.2l1.4 1.4M17.4 17.4l1.4 1.4M18.8 5.2l-1.4 1.4M6.6 17.4l-1.4 1.4"/></symbol>
+<symbol id="i-moon" viewBox="0 0 24 24"><path d="M20.5 14.8A8.6 8.6 0 0 1 9.2 3.5a8.7 8.7 0 1 0 11.3 11.3z"/></symbol>
+<symbol id="i-print" viewBox="0 0 24 24"><path d="M7 9V3.5h10V9"/><path d="M7 18H5.2A2.2 2.2 0 0 1 3 15.8v-4.6A2.2 2.2 0 0 1 5.2 9h13.6A2.2 2.2 0 0 1 21 11.2v4.6A2.2 2.2 0 0 1 18.8 18H17"/><rect x="7" y="14" width="10" height="6.5" rx="1"/></symbol>
+<symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3.5v11M12 14.5l-4-4M12 14.5l4-4M4 19.5h16"/></symbol>
+<symbol id="i-copy" viewBox="0 0 24 24"><rect x="9" y="9" width="11.5" height="11.5" rx="2.2"/><path d="M15.5 5.6V5a2 2 0 0 0-2-2H5.5a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h.6"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M4.5 12.5l5 5 10-11"/></symbol>
+<symbol id="i-chevron" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></symbol>
+<symbol id="i-keyboard" viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.2"/><path d="M6.5 10h.01M10 10h.01M13.5 10h.01M17 10h.01M8 14h8"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.3l3.2 1.9"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8l-5-5z"/><path d="M14 3v5h5"/></symbol>
+<symbol id="i-db" viewBox="0 0 24 24"><ellipse cx="12" cy="6" rx="7.5" ry="3"/><path d="M4.5 6v12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3V6"/><path d="M4.5 12c0 1.7 3.4 3 7.5 3s7.5-1.3 7.5-3"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="M12 3l9 5-9 5-9-5 9-5z"/><path d="M3 13l9 5 9-5"/></symbol>
+<symbol id="i-server" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="7" rx="2"/><rect x="3" y="13" width="18" height="7" rx="2"/><path d="M7 7.5h.01M7 16.5h.01"/></symbol>
+<symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3.8l9 15.7H3l9-15.7z"/><path d="M12 10v3.6M12 16.7h.01"/></symbol>
+<symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 8h.01"/></symbol>
+<symbol id="i-bulb" viewBox="0 0 24 24"><path d="M9.5 17.5h5M10 20.5h4"/><path d="M12 3a6 6 0 0 0-3.5 10.9c.6.5.9 1.2.9 1.9v.7h5.2v-.7c0-.7.3-1.4.9-1.9A6 6 0 0 0 12 3z"/></symbol>
+<symbol id="i-filter-x" viewBox="0 0 24 24"><path d="M3.5 5h17l-6.6 7.7v5.6l-3.8 2.2v-7.8L3.5 5z"/><path d="M17 17l4 4M21 17l-4 4"/></symbol>
+<symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 9.5l4-4 4 4M8 14.5l4 4 4-4"/></symbol>
+<symbol id="i-link" viewBox="0 0 24 24"><path d="M14 4h6v6M20 4l-8.5 8.5"/><path d="M18 14.5V18a2.5 2.5 0 0 1-2.5 2.5h-9A2.5 2.5 0 0 1 4 18V9a2.5 2.5 0 0 1 2.5-2.5H10"/></symbol>
+</defs></svg>
+
+<a class="skip" href="#alerts">Skip to alerts</a>
+
+<header class="topbar">
+  <div class="wrap">
+    <h1 class="brand-w"><a class="brand" href="#top">
+      <svg class="i" aria-hidden="true"><use href="#i-shield"/></svg>
+      NetWatch-Lite<small>v0.1.0</small>
+    </a></h1>
+    <div class="runmeta">
+      <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg>Generated: <b>2026-10-08 04:26 UTC</b></span>
+      <span><svg class="i" aria-hidden="true"><use href="#i-file"/></svg>
+        <span class="clip" dir="ltr">demo_output_en\demo.pcap · demo_output_en\demo_auth.log</span></span>
+    </div>
+    <div class="tools">
+      <button class="ibtn" id="btn-theme" type="button" title="Switch to dark theme" aria-label="Switch to dark theme">
+        <svg class="i theme-sun" aria-hidden="true"><use href="#i-sun"/></svg>
+        <svg class="i theme-moon" aria-hidden="true"><use href="#i-moon"/></svg>
+      </button>
+      <button class="ibtn" id="btn-print" type="button" title="Print" aria-label="Print">
+        <svg class="i" aria-hidden="true"><use href="#i-print"/></svg><span class="lbl">Print</span>
+      </button>
+      <button class="ibtn" id="btn-help" type="button" title="Shortcuts" aria-label="Shortcuts">
+        <svg class="i" aria-hidden="true"><use href="#i-keyboard"/></svg>
+      </button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap" id="top">
+
+  <!-- ================= overview ================= -->
+  <section id="overview" aria-labelledby="h-overview">
+    <h2 id="h-overview">Overview</h2>
+
+    <div class="kpis">
+      <div class="kpi" style="--tone:var(--accent)">
+        <span class="v ltr">317</span>
+        <span class="k">Events analysed</span>
+        <div class="d"><span class="ltr">tcp 181</span>·<span class="ltr">dns 106</span>·<span class="ltr">auth 25</span>·<span class="ltr">arp 3</span>·<span class="ltr">dhcp 2</span></div>
+      </div>
+      <div class="kpi" style="--tone:var(--critical)">
+        <span class="v ltr">9</span>
+        <span class="k">Alerts</span>
+        <div class="d">
+          <span style="color:var(--critical)"><span class="dot"></span> CRITICAL <b class="ltr">1</b></span>
+          <span style="color:var(--high)"><span class="dot"></span> HIGH <b class="ltr">4</b></span>
+          
+        </div>
+      </div>
+      <div class="kpi kpi-sm" style="--tone:var(--bd-2)">
+        <span class="v ltr">2026-10-05<br>10:00:00 → 10:03:50 UTC</span>
+        <span class="k">Capture window</span>
+      </div>
+      <div class="kpi" style="--tone:var(--low)">
+        <span class="v ltr">10</span>
+        <span class="k">techniques MITRE ATT&amp;CK</span>
+        <div class="d"><span class="ltr">T1110</span>·<span class="ltr">T1046</span>·<span class="ltr">T1048</span></div>
+      </div>
+      <div class="kpi kpi-sm" style="--tone:var(--bd-2)">
+        <span class="v ltr">2</span>
+        <span class="k">Input files</span>
+        <div class="d"><span class="ltr" title="demo_output_en\demo.pcap · demo_output_en\demo_auth.log"
+          style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block">demo_output_en\demo.pcap · demo_output_en\demo_auth.log</span></div>
+      </div>
+    </div>
+
+    <div class="panels" style="margin-top:12px">
+      <!-- severity -->
+      <div class="panel">
+        <h3>Alerts by severity</h3>
+        
+        
+        
+        <button class="sevrow" type="button" data-sev-filter="critical" aria-pressed="false"
+                style="--c:var(--critical)" aria-label="CRITICAL: 1">
+          <span class="lbl">CRITICAL</span>
+          <span class="track"><i style="width:11%"></i></span>
+          <span class="n ltr">1</span>
+        </button>
+        
+        
+        <button class="sevrow" type="button" data-sev-filter="high" aria-pressed="false"
+                style="--c:var(--high)" aria-label="HIGH: 4">
+          <span class="lbl">HIGH</span>
+          <span class="track"><i style="width:44%"></i></span>
+          <span class="n ltr">4</span>
+        </button>
+        
+        
+        <button class="sevrow" type="button" data-sev-filter="medium" aria-pressed="false"
+                style="--c:var(--medium)" aria-label="MEDIUM: 3">
+          <span class="lbl">MEDIUM</span>
+          <span class="track"><i style="width:33%"></i></span>
+          <span class="n ltr">3</span>
+        </button>
+        
+        
+        <button class="sevrow" type="button" data-sev-filter="low" aria-pressed="false"
+                style="--c:var(--low)" aria-label="LOW: 1">
+          <span class="lbl">LOW</span>
+          <span class="track"><i style="width:11%"></i></span>
+          <span class="n ltr">1</span>
+        </button>
+        
+        
+        <button class="sevrow" type="button" data-sev-filter="info" aria-pressed="false"
+                style="--c:var(--info)" aria-label="INFO: 0">
+          <span class="lbl">INFO</span>
+          <span class="track"><i style="width:0%"></i></span>
+          <span class="n ltr">0</span>
+        </button>
+        
+      </div>
+
+      <!-- event types -->
+      <div class="panel">
+        <h3>Event types</h3>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">tcp</span>
+            <span class="meter"><i style="width:100%"></i></span>
+          </span>
+          <span class="n ltr">181</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">dns</span>
+            <span class="meter"><i style="width:59%"></i></span>
+          </span>
+          <span class="n ltr">106</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">auth</span>
+            <span class="meter"><i style="width:14%"></i></span>
+          </span>
+          <span class="n ltr">25</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">arp</span>
+            <span class="meter"><i style="width:2%"></i></span>
+          </span>
+          <span class="n ltr">3</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">dhcp</span>
+            <span class="meter"><i style="width:1%"></i></span>
+          </span>
+          <span class="n ltr">2</span>
+        </div>
+        
+      </div>
+
+      <!-- top sources -->
+      <div class="panel">
+        <h3>Top sources</h3>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">192.168.10.66</span>
+            <span class="meter"><i style="width:100%"></i></span>
+          </span>
+          <span class="n ltr">4</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">192.168.10.31</span>
+            <span class="meter"><i style="width:50%"></i></span>
+          </span>
+          <span class="n ltr">2</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">de:ad:be:ef:00:66</span>
+            <span class="meter"><i style="width:25%"></i></span>
+          </span>
+          <span class="n ltr">1</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">192.168.10.2,192.168.10.66</span>
+            <span class="meter"><i style="width:25%"></i></span>
+          </span>
+          <span class="n ltr">1</span>
+        </div>
+        
+        <div class="mrow">
+          <span class="t"><span class="ltr">02:11:22:33:44:55</span>
+            <span class="meter"><i style="width:25%"></i></span>
+          </span>
+          <span class="n ltr">1</span>
+        </div>
+        
+      </div>
+    </div>
+
+    
+    <!-- timeline -->
+    <div class="timeline">
+      <h3 class="eyebrow tight">Alert timeline</h3>
+      <div class="tl-track">
+        
+        <a class="tl-dot" href="#NW-0006" style="--x:15.22%;--c:var(--medium)"
+           title="NW-0006 · Multiple DHCP servers answering on the same network · 2026-10-05 10:00:35 UTC" aria-label="NW-0006 · Multiple DHCP servers answering on the same network — 2026-10-05 10:00:35 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0002" style="--x:26.09%;--c:var(--high)"
+           title="NW-0002 · Port scan from 192.168.10.66 · 2026-10-05 10:01:00 UTC" aria-label="NW-0002 · Port scan from 192.168.10.66 — 2026-10-05 10:01:00 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0007" style="--x:26.54%;--c:var(--medium)"
+           title="NW-0007 · Possible brute force on 192.168.10.5:22 from 192.168.10.66 · 2026-10-05 10:01:01 UTC" aria-label="NW-0007 · Possible brute force on 192.168.10.5:22 from 192.168.10.66 — 2026-10-05 10:01:01 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0003" style="--x:43.48%;--c:var(--high)"
+           title="NW-0003 · Password spraying against SSH from 192.168.10.66 · 2026-10-05 10:01:40 UTC" aria-label="NW-0003 · Password spraying against SSH from 192.168.10.66 — 2026-10-05 10:01:40 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0004" style="--x:60.87%;--c:var(--high)"
+           title="NW-0004 · ARP spoofing: 192.168.10.1 changed MAC aa:bb:cc:00:00:01 -&gt; de:ad:be:ef:00:66 · 2026-10-05 10:02:20 UTC" aria-label="NW-0004 · ARP spoofing: 192.168.10.1 changed MAC aa:bb:cc:00:00:01 -&gt; de:ad:be:ef:00:66 — 2026-10-05 10:02:20 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0001" style="--x:69.57%;--c:var(--critical)"
+           title="NW-0001 · Successful SSH login after brute force from 192.168.10.66 · 2026-10-05 10:02:40 UTC" aria-label="NW-0001 · Successful SSH login after brute force from 192.168.10.66 — 2026-10-05 10:02:40 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0005" style="--x:69.57%;--c:var(--high)"
+           title="NW-0005 · Possible DNS tunnelling to evil-tunnel.com from 192.168.10.31 · 2026-10-05 10:02:40 UTC" aria-label="NW-0005 · Possible DNS tunnelling to evil-tunnel.com from 192.168.10.31 — 2026-10-05 10:02:40 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0008" style="--x:69.57%;--c:var(--medium)"
+           title="NW-0008 · DGA-like domain lookups from 192.168.10.31 · 2026-10-05 10:02:40 UTC" aria-label="NW-0008 · DGA-like domain lookups from 192.168.10.31 — 2026-10-05 10:02:40 UTC"></a>
+        
+        <a class="tl-dot" href="#NW-0009" style="--x:100.0%;--c:var(--low)"
+           title="NW-0009 · Unknown device 02:11:22:33:44:55 · 2026-10-05 10:03:50 UTC" aria-label="NW-0009 · Unknown device 02:11:22:33:44:55 — 2026-10-05 10:03:50 UTC"></a>
+        
+      </div>
+      <div class="tl-axis">
+        <span class="ltr">2026-10-05 10:00:00 UTC</span>
+        <span class="ltr">2026-10-05 10:03:50 UTC</span>
+      </div>
+      <div class="tl-legend">
+        
+        <b style="color:var(--critical)"><span class="dot"></span>CRITICAL <span class="ltr" style="color:var(--mut)">×1</span></b>
+        
+        <b style="color:var(--high)"><span class="dot"></span>HIGH <span class="ltr" style="color:var(--mut)">×4</span></b>
+        
+        <b style="color:var(--medium)"><span class="dot"></span>MEDIUM <span class="ltr" style="color:var(--mut)">×3</span></b>
+        
+        <b style="color:var(--low)"><span class="dot"></span>LOW <span class="ltr" style="color:var(--mut)">×1</span></b>
+        
+      </div>
+    </div>
+    
+
+    <!-- mitre -->
+    <h3 class="eyebrow">MITRE ATT&amp;CK coverage</h3>
+    <div class="chips">
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1110/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1110</span>
+        <span>Brute Force</span>
+        <span class="c ltr">Credential Access · ×2</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1046/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1046</span>
+        <span>Network Service Discovery</span>
+        <span class="c ltr">Discovery · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1048/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1048</span>
+        <span>Exfiltration Over Alternative Protocol</span>
+        <span class="c ltr">Exfiltration · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1071/004/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1071.004</span>
+        <span>Application Layer Protocol: DNS</span>
+        <span class="c ltr">Command and Control · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1078/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1078</span>
+        <span>Valid Accounts</span>
+        <span class="c ltr">Defense Evasion / Persistence · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1110/003/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1110.003</span>
+        <span>Password Spraying</span>
+        <span class="c ltr">Credential Access · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1200/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1200</span>
+        <span>Hardware Additions</span>
+        <span class="c ltr">Initial Access · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1557/002/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1557.002</span>
+        <span>Adversary-in-the-Middle: ARP Cache Poisoning</span>
+        <span class="c ltr">Credential Access · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1557/003/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1557.003</span>
+        <span>Adversary-in-the-Middle: DHCP Spoofing</span>
+        <span class="c ltr">Credential Access · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+      <a class="chip" href="https://attack.mitre.org/techniques/T1568/002/" target="_blank" rel="noopener noreferrer">
+        <span class="tid">T1568.002</span>
+        <span>Dynamic Resolution: Domain Generation Algorithms</span>
+        <span class="c ltr">Command and Control · ×1</span>
+        <svg class="i" aria-hidden="true"><use href="#i-link"/></svg>
+      </a>
+      
+    </div>
+  </section>
+
+  <!-- ================= alerts ================= -->
+  <section id="alerts" aria-labelledby="h-alerts">
+    <h2 id="h-alerts">Alert queue</h2>
+
+    <div class="toolbar" role="search">
+      <div class="search">
+        <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+        <label class="sr" for="q">Search rule, title, IP, technique…</label>
+        <input id="q" type="search" placeholder="Search rule, title, IP, technique…" autocomplete="off" spellcheck="false">
+        <kbd aria-hidden="true">/</kbd>
+      </div>
+
+      <button class="fchip" type="button" data-sev-filter="all" aria-pressed="true">All
+        <span class="n ltr">9</span></button>
+      
+      <button class="fchip" type="button" data-sev-filter="critical" aria-pressed="false"
+              style="--c:var(--critical)">CRITICAL
+        <span class="n ltr">1</span></button>
+      
+      <button class="fchip" type="button" data-sev-filter="high" aria-pressed="false"
+              style="--c:var(--high)">HIGH
+        <span class="n ltr">4</span></button>
+      
+      <button class="fchip" type="button" data-sev-filter="medium" aria-pressed="false"
+              style="--c:var(--medium)">MEDIUM
+        <span class="n ltr">3</span></button>
+      
+      <button class="fchip" type="button" data-sev-filter="low" aria-pressed="false"
+              style="--c:var(--low)">LOW
+        <span class="n ltr">1</span></button>
+      
+      <button class="fchip" type="button" data-sev-filter="info" aria-pressed="false"
+              style="--c:var(--info)">INFO
+        <span class="n ltr">0</span></button>
+      
+
+      <div class="acts">
+        <label class="sr" for="sort">Sort</label>
+        <select class="sel" id="sort">
+          <option value="sev">Severity</option>
+          <option value="time">First seen</option>
+          <option value="count">Event count</option>
+          <option value="rule">Rule</option>
+        </select>
+
+        <button class="ibtn" id="btn-expand" type="button" title="Expand all" aria-label="Expand all">
+          <svg class="i" aria-hidden="true"><use href="#i-expand"/></svg>
+        </button>
+        <button class="ibtn" id="btn-csv" type="button" title="Export CSV" aria-label="Export CSV">
+          <svg class="i" aria-hidden="true"><use href="#i-download"/></svg>
+        </button>
+      </div>
+
+      <p class="count" id="count" role="status" aria-live="polite">Showing 9 of 9 alerts</p>
+    </div>
+
+    <noscript>
+      <p class="notice noscript-hint"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>JavaScript is disabled: filters are unavailable, every alert is shown.</p>
+    </noscript>
+
+    <div class="queue" id="queue">
+      
+      <details class="alert" id="NW-0001"
+        data-sev="critical"
+        data-ts="1791194560.0" data-count="1" data-rule="bruteforce"
+        data-s="nw-0001 critical bruteforce successful ssh login after brute force from 192.168.10.66 192.168.10.66 account &#39;deploy&#39; authenticated successfully after 24 failures from the same source. t1110 t1078 brute force valid accounts"
+        style="--c:var(--critical)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>CRITICAL</span>
+          <div class="a-head">
+            <h3 class="a-title">Successful SSH login after brute force from 192.168.10.66</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0001</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">Brute force / password spraying</b><code>bruteforce</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.66</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">1</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:02:40 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>Account &#39;deploy&#39; authenticated successfully after 24 failures from the same source.</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1110/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1110</span><span>Brute Force</span>
+                  <span class="c ltr">Credential Access</span>
+                </a>
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1078/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1078</span><span>Valid Accounts</span>
+                  <span class="c ltr">Defense Evasion / Persistence</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>user=deploy</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Treat the account as compromised: reset credentials, kill active sessions and audit activity after this timestamp.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:02:40 UTC · Last seen: 2026-10-05 10:02:40 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0001">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0002"
+        data-sev="high"
+        data-ts="1791194460.0" data-count="120" data-rule="portscan"
+        data-s="nw-0002 high portscan port scan from 192.168.10.66 192.168.10.66 192.168.10.66 sent syn-only probes to 30 distinct targets within 10s: vertical scan (many ports on one host). t1046 network service discovery"
+        style="--c:var(--high)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>HIGH</span>
+          <div class="a-head">
+            <h3 class="a-title">Port scan from 192.168.10.66</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0002</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">Port scan</b><code>portscan</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.66</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">120</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:01:00 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>192.168.10.66 sent SYN-only probes to 30 distinct targets within 10s: vertical scan (many ports on one host).</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1046/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1046</span><span>Network Service Discovery</span>
+                  <span class="c ltr">Discovery</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>hosts=1 ports=30 sample_ports=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Verify whether the source is an authorised scanner; otherwise isolate the host and review firewall logs for follow-up connections.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:01:00 UTC · Last seen: 2026-10-05 10:01:05 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0002">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0003"
+        data-sev="high"
+        data-ts="1791194500.0" data-count="24" data-rule="bruteforce"
+        data-s="nw-0003 high bruteforce password spraying against ssh from 192.168.10.66 192.168.10.66 8 failed logins in 120s targeting 8 account(s). t1110.003 password spraying"
+        style="--c:var(--high)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>HIGH</span>
+          <div class="a-head">
+            <h3 class="a-title">Password spraying against SSH from 192.168.10.66</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0003</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">Brute force / password spraying</b><code>bruteforce</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.66</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">24</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:01:40 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>8 failed logins in 120s targeting 8 account(s).</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1110/003/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1110.003</span><span>Password Spraying</span>
+                  <span class="c ltr">Credential Access</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>users=[&#39;admin&#39;, &#39;deploy&#39;, &#39;oracle&#39;, &#39;pi&#39;, &#39;root&#39;, &#39;test&#39;, &#39;ubuntu&#39;, &#39;user&#39;]</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Block the source, enforce lockout / MFA, and review accounts that were targeted.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:01:40 UTC · Last seen: 2026-10-05 10:02:26 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0003">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0004"
+        data-sev="high"
+        data-ts="1791194540.0" data-count="1" data-rule="arp"
+        data-s="nw-0004 high arp arp spoofing: 192.168.10.1 changed mac aa:bb:cc:00:00:01 -&gt; de:ad:be:ef:00:66 de:ad:be:ef:00:66 192.168.10.1 was first bound to aa:bb:cc:00:00:01 but de:ad:be:ef:00:66 now claims it. t1557.002 adversary-in-the-middle: arp cache poisoning"
+        style="--c:var(--high)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>HIGH</span>
+          <div class="a-head">
+            <h3 class="a-title">ARP spoofing: 192.168.10.1 changed MAC aa:bb:cc:00:00:01 -&gt; de:ad:be:ef:00:66</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0004</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">ARP spoofing</b><code>arp</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>de:ad:be:ef:00:66</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">1</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:02:20 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>192.168.10.1 was first bound to aa:bb:cc:00:00:01 but de:ad:be:ef:00:66 now claims it.</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1557/002/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1557.002</span><span>Adversary-in-the-Middle: ARP Cache Poisoning</span>
+                  <span class="c ltr">Credential Access</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>original=aa:bb:cc:00:00:01</code><code>new=de:ad:be:ef:00:66</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Enable Dynamic ARP Inspection / port security on the switch and verify which port the new MAC is on.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:02:20 UTC · Last seen: 2026-10-05 10:02:20 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0004">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0005"
+        data-sev="high"
+        data-ts="1791194560.0" data-count="80" data-rule="dns"
+        data-s="nw-0005 high dns possible dns tunnelling to evil-tunnel.com from 192.168.10.31 192.168.10.31 avg query length 66; 20 txt/null queries. t1071.004 t1048 application layer protocol: dns exfiltration over alternative protocol"
+        style="--c:var(--high)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>HIGH</span>
+          <div class="a-head">
+            <h3 class="a-title">Possible DNS tunnelling to evil-tunnel.com from 192.168.10.31</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0005</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">DNS tunnelling &amp; DGA</b><code>dns</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.31</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">80</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:02:40 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>avg query length 66; 20 TXT/NULL queries.</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1071/004/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1071.004</span><span>Application Layer Protocol: DNS</span>
+                  <span class="c ltr">Command and Control</span>
+                </a>
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1048/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1048</span><span>Exfiltration Over Alternative Protocol</span>
+                  <span class="c ltr">Exfiltration</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>ub3wgkfatmkmgfkzpd3o2v56meeeixrybapdhzrsja2t7xcu.t.evil-tunnel.com</code><code>dfdx32z6la7lme3mfk2ofol3b3tgusd7xubxvngbdzzczac3.t.evil-tunnel.com</code><code>fu4nf5xxcjjgo2kimqy6vexnk6rfr6qjgnjkjcadpwhtme3y.t.evil-tunnel.com</code><code>fmlxndpgsususcq2uvfrrcudi377vkyb4emytn724izyyleq.t.evil-tunnel.com</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Block or sinkhole the domain and inspect the host for tunnelling tools (iodine, dnscat2).</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:02:40 UTC · Last seen: 2026-10-05 10:03:11 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0005">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0006"
+        data-sev="medium"
+        data-ts="1791194435.0" data-count="1" data-rule="rogue_dhcp"
+        data-s="nw-0006 medium rogue_dhcp multiple dhcp servers answering on the same network 192.168.10.2,192.168.10.66 servers seen: 192.168.10.2, 192.168.10.66. set allowed_servers to pinpoint the rogue one. t1557.003 adversary-in-the-middle: dhcp spoofing"
+        style="--c:var(--medium)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>MEDIUM</span>
+          <div class="a-head">
+            <h3 class="a-title">Multiple DHCP servers answering on the same network</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0006</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">Rogue DHCP</b><code>rogue_dhcp</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.2,192.168.10.66</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">1</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:00:35 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>Servers seen: 192.168.10.2, 192.168.10.66. Set allowed_servers to pinpoint the rogue one.</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1557/003/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1557.003</span><span>Adversary-in-the-Middle: DHCP Spoofing</span>
+                  <span class="c ltr">Credential Access</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>192.168.10.2 mac=aa:bb:cc:00:00:02</code><code>192.168.10.66 mac=de:ad:be:ef:00:66</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Identify the unauthorised server and enable DHCP snooping.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:00:35 UTC · Last seen: 2026-10-05 10:00:35 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0006">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0007"
+        data-sev="medium"
+        data-ts="1791194461.05" data-count="41" data-rule="bruteforce"
+        data-s="nw-0007 medium bruteforce possible brute force on 192.168.10.5:22 from 192.168.10.66 192.168.10.66 25 new tcp connections to an authentication port within 120s (connection-rate heuristic, no auth log available). t1110 brute force"
+        style="--c:var(--medium)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>MEDIUM</span>
+          <div class="a-head">
+            <h3 class="a-title">Possible brute force on 192.168.10.5:22 from 192.168.10.66</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0007</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">Brute force / password spraying</b><code>bruteforce</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.66</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">41</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:01:01 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>25 new TCP connections to an authentication port within 120s (connection-rate heuristic, no auth log available).</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1110/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1110</span><span>Brute Force</span>
+                  <span class="c ltr">Credential Access</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>dst=192.168.10.5:22</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Correlate with the target host&#39;s authentication logs.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:01:01 UTC · Last seen: 2026-10-05 10:02:09 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0007">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0008"
+        data-sev="medium"
+        data-ts="1791194560.0" data-count="6" data-rule="dns"
+        data-s="nw-0008 medium dns dga-like domain lookups from 192.168.10.31 192.168.10.31 3 distinct domains with random-looking names were queried (high shannon entropy). t1568.002 dynamic resolution: domain generation algorithms"
+        style="--c:var(--medium)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>MEDIUM</span>
+          <div class="a-head">
+            <h3 class="a-title">DGA-like domain lookups from 192.168.10.31</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0008</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">DNS tunnelling &amp; DGA</b><code>dns</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>192.168.10.31</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">6</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:02:40 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>3 distinct domains with random-looking names were queried (high Shannon entropy).</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1568/002/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1568.002</span><span>Dynamic Resolution: Domain Generation Algorithms</span>
+                  <span class="c ltr">Command and Control</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>i6n9mvxfku58krv97j.com</code><code>qj33m0m4pnu7lfk7bp.biz</code><code>wf2fp0760ab8waxoa4.info</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Check the host for malware; sinkhole the domains at the resolver.</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:02:40 UTC · Last seen: 2026-10-05 10:03:30 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0008">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+      <details class="alert" id="NW-0009"
+        data-sev="low"
+        data-ts="1791194630.0" data-count="1" data-rule="new_device"
+        data-s="nw-0009 low new_device unknown device 02:11:22:33:44:55 02:11:22:33:44:55 mac not in inventory (ip seen: 192.168.10.77). t1200 hardware additions"
+        style="--c:var(--low)">
+
+        <summary>
+          <span class="badge"><span class="dot"></span>LOW</span>
+          <div class="a-head">
+            <h3 class="a-title">Unknown device 02:11:22:33:44:55</h3>
+            <div class="a-meta">
+              <span class="ltr" style="font-weight:600;color:var(--fg-2)">NW-0009</span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-layers"/></svg>Rule:
+                <b class="rule-name">Unknown device</b><code>new_device</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-server"/></svg>Source: <code>02:11:22:33:44:55</code></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-db"/></svg>Count: <b class="ltr">1</b></span>
+              <span><svg class="i" aria-hidden="true"><use href="#i-clock"/></svg><span class="ltr">2026-10-05 10:03:50 UTC</span></span>
+            </div>
+          </div>
+          <span class="chev" aria-hidden="true"><svg class="i"><use href="#i-chevron"/></svg></span>
+        </summary>
+
+        <div class="a-body">
+          <p>MAC not in inventory (IP seen: 192.168.10.77).</p>
+
+          <div class="a-grid">
+            
+            <div class="block">
+              <h4>MITRE ATT&amp;CK</h4>
+              <div class="chips">
+                
+                <a class="chip" href="https://attack.mitre.org/techniques/T1200/" target="_blank" rel="noopener noreferrer">
+                  <span class="tid">T1200</span><span>Hardware Additions</span>
+                  <span class="c ltr">Initial Access</span>
+                </a>
+                
+              </div>
+            </div>
+            
+
+            
+            <div class="block">
+              <h4>Evidence</h4>
+              <div class="evi"><code>ip=192.168.10.77</code></div>
+            </div>
+            
+          </div>
+
+          
+          <div class="rec">
+            <svg class="i" aria-hidden="true"><use href="#i-bulb"/></svg>
+            <span><b style="color:var(--fg)">Recommended action:</b> Identify the owner; add to inventory or disconnect (802.1X / port security).</span>
+          </div>
+          
+
+          <div class="a-actions">
+            <span class="sub ltr">First seen: 2026-10-05 10:03:50 UTC · Last seen: 2026-10-05 10:03:50 UTC</span>
+            <span class="spacer"></span>
+            <button class="mini" type="button" data-copy="NW-0009">
+              <svg class="i" aria-hidden="true"><use href="#i-copy"/></svg>&lt;built-in method copy of dict object at 0x000002182009C2C0&gt;
+            </button>
+          </div>
+        </div>
+      </details>
+      
+    </div>
+
+    <div class="empty" id="empty" hidden>
+      <svg class="i" aria-hidden="true"><use href="#i-search"/></svg>
+      <h3>No alert matches the current filters.</h3><p class="sub" style="margin:0">&lt;built-in method clear of dict object at 0x000002182009C2C0&gt; — <kbd>Esc</kbd></p>
+      
+    </div>
+
+    <p class="notice"><svg class="i" aria-hidden="true"><use href="#i-info"/></svg>
+      <span>Alerts need human review — tune thresholds with rules/default.yaml. · Press ? for shortcuts</span></p>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Generated by <b>NetWatch-Lite</b> <span class="ltr">v0.1.0</span> · Generated <span class="ltr">2026-10-08 04:26 UTC</span></span>
+    <span><a href="https://github.com/" target="_blank" rel="noopener noreferrer">NetWatch-Lite</a> ·
+      <a href="https://attack.mitre.org/" target="_blank" rel="noopener noreferrer">MITRE ATT&CK</a> ·
+      <a href="https://opensource.org/license/mit" target="_blank" rel="noopener noreferrer">MIT</a></span>
+  </div>
+</footer>
+
+<dialog id="dlg-help" aria-labelledby="dlg-help-t">
+  <div class="dlg-h">
+    <h3 id="dlg-help-t">Keyboard shortcuts</h3>
+    <button class="ibtn" type="button" data-close aria-label="close"><svg class="i" aria-hidden="true"><use href="#i-x"/></svg></button>
+  </div>
+  <div class="dlg-b">
+    <div class="srow"><span class="keys"><kbd class="k">/</kbd></span><span>focus search</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">1</kbd><kbd class="k">2</kbd><kbd class="k">3</kbd><kbd class="k">4</kbd><kbd class="k">5</kbd></span><span>severity</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">0</kbd></span><span>show every alert</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">Esc</kbd></span><span>close help / clear search</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">e</kbd></span><span>expand / collapse all</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">c</kbd></span><span>export CSV</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">t</kbd></span><span>toggle theme</span></div>
+    <div class="srow"><span class="keys"><kbd class="k">?</kbd></span><span>this help</span></div>
+  </div>
+</dialog>
+
+<script type="application/json" id="nw-data">[{"id": "NW-0001", "rule": "bruteforce", "severity": "critical", "title": "Successful SSH login after brute force from 192.168.10.66", "description": "Account 'deploy' authenticated successfully after 24 failures from the same source.", "src": "192.168.10.66", "first_seen": 1791194560.0, "last_seen": 1791194560.0, "count": 1, "mitre": [{"id": "T1110", "name": "Brute Force", "tactic": "Credential Access", "url": "https://attack.mitre.org/techniques/T1110/"}, {"id": "T1078", "name": "Valid Accounts", "tactic": "Defense Evasion / Persistence", "url": "https://attack.mitre.org/techniques/T1078/"}], "evidence": ["user=deploy"], "recommendation": "Treat the account as compromised: reset credentials, kill active sessions and audit activity after this timestamp."}, {"id": "NW-0002", "rule": "portscan", "severity": "high", "title": "Port scan from 192.168.10.66", "description": "192.168.10.66 sent SYN-only probes to 30 distinct targets within 10s: vertical scan (many ports on one host).", "src": "192.168.10.66", "first_seen": 1791194460.0, "last_seen": 1791194465.95, "count": 120, "mitre": [{"id": "T1046", "name": "Network Service Discovery", "tactic": "Discovery", "url": "https://attack.mitre.org/techniques/T1046/"}], "evidence": ["hosts=1 ports=30 sample_ports=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]"], "recommendation": "Verify whether the source is an authorised scanner; otherwise isolate the host and review firewall logs for follow-up connections."}, {"id": "NW-0003", "rule": "bruteforce", "severity": "high", "title": "Password spraying against SSH from 192.168.10.66", "description": "8 failed logins in 120s targeting 8 account(s).", "src": "192.168.10.66", "first_seen": 1791194500.0, "last_seen": 1791194546.0, "count": 24, "mitre": [{"id": "T1110.003", "name": "Password Spraying", "tactic": "Credential Access", "url": "https://attack.mitre.org/techniques/T1110/003/"}], "evidence": ["users=['admin', 'deploy', 'oracle', 'pi', 'root', 'test', 'ubuntu', 'user']"], "recommendation": "Block the source, enforce lockout / MFA, and review accounts that were targeted."}, {"id": "NW-0004", "rule": "arp", "severity": "high", "title": "ARP spoofing: 192.168.10.1 changed MAC aa:bb:cc:00:00:01 -> de:ad:be:ef:00:66", "description": "192.168.10.1 was first bound to aa:bb:cc:00:00:01 but de:ad:be:ef:00:66 now claims it.", "src": "de:ad:be:ef:00:66", "first_seen": 1791194540.0, "last_seen": 1791194540.0, "count": 1, "mitre": [{"id": "T1557.002", "name": "Adversary-in-the-Middle: ARP Cache Poisoning", "tactic": "Credential Access", "url": "https://attack.mitre.org/techniques/T1557/002/"}], "evidence": ["original=aa:bb:cc:00:00:01", "new=de:ad:be:ef:00:66"], "recommendation": "Enable Dynamic ARP Inspection / port security on the switch and verify which port the new MAC is on."}, {"id": "NW-0005", "rule": "dns", "severity": "high", "title": "Possible DNS tunnelling to evil-tunnel.com from 192.168.10.31", "description": "avg query length 66; 20 TXT/NULL queries.", "src": "192.168.10.31", "first_seen": 1791194560.0, "last_seen": 1791194591.6, "count": 80, "mitre": [{"id": "T1071.004", "name": "Application Layer Protocol: DNS", "tactic": "Command and Control", "url": "https://attack.mitre.org/techniques/T1071/004/"}, {"id": "T1048", "name": "Exfiltration Over Alternative Protocol", "tactic": "Exfiltration", "url": "https://attack.mitre.org/techniques/T1048/"}], "evidence": ["ub3wgkfatmkmgfkzpd3o2v56meeeixrybapdhzrsja2t7xcu.t.evil-tunnel.com", "dfdx32z6la7lme3mfk2ofol3b3tgusd7xubxvngbdzzczac3.t.evil-tunnel.com", "fu4nf5xxcjjgo2kimqy6vexnk6rfr6qjgnjkjcadpwhtme3y.t.evil-tunnel.com", "fmlxndpgsususcq2uvfrrcudi377vkyb4emytn724izyyleq.t.evil-tunnel.com"], "recommendation": "Block or sinkhole the domain and inspect the host for tunnelling tools (iodine, dnscat2)."}, {"id": "NW-0006", "rule": "rogue_dhcp", "severity": "medium", "title": "Multiple DHCP servers answering on the same network", "description": "Servers seen: 192.168.10.2, 192.168.10.66. Set allowed_servers to pinpoint the rogue one.", "src": "192.168.10.2,192.168.10.66", "first_seen": 1791194435.0, "last_seen": 1791194435.0, "count": 1, "mitre": [{"id": "T1557.003", "name": "Adversary-in-the-Middle: DHCP Spoofing", "tactic": "Credential Access", "url": "https://attack.mitre.org/techniques/T1557/003/"}], "evidence": ["192.168.10.2 mac=aa:bb:cc:00:00:02", "192.168.10.66 mac=de:ad:be:ef:00:66"], "recommendation": "Identify the unauthorised server and enable DHCP snooping."}, {"id": "NW-0007", "rule": "bruteforce", "severity": "medium", "title": "Possible brute force on 192.168.10.5:22 from 192.168.10.66", "description": "25 new TCP connections to an authentication port within 120s (connection-rate heuristic, no auth log available).", "src": "192.168.10.66", "first_seen": 1791194461.05, "last_seen": 1791194529.0, "count": 41, "mitre": [{"id": "T1110", "name": "Brute Force", "tactic": "Credential Access", "url": "https://attack.mitre.org/techniques/T1110/"}], "evidence": ["dst=192.168.10.5:22"], "recommendation": "Correlate with the target host's authentication logs."}, {"id": "NW-0008", "rule": "dns", "severity": "medium", "title": "DGA-like domain lookups from 192.168.10.31", "description": "3 distinct domains with random-looking names were queried (high Shannon entropy).", "src": "192.168.10.31", "first_seen": 1791194560.0, "last_seen": 1791194610.0, "count": 6, "mitre": [{"id": "T1568.002", "name": "Dynamic Resolution: Domain Generation Algorithms", "tactic": "Command and Control", "url": "https://attack.mitre.org/techniques/T1568/002/"}], "evidence": ["i6n9mvxfku58krv97j.com", "qj33m0m4pnu7lfk7bp.biz", "wf2fp0760ab8waxoa4.info"], "recommendation": "Check the host for malware; sinkhole the domains at the resolver."}, {"id": "NW-0009", "rule": "new_device", "severity": "low", "title": "Unknown device 02:11:22:33:44:55", "description": "MAC not in inventory (IP seen: 192.168.10.77).", "src": "02:11:22:33:44:55", "first_seen": 1791194630.0, "last_seen": 1791194630.0, "count": 1, "mitre": [{"id": "T1200", "name": "Hardware Additions", "tactic": "Initial Access", "url": "https://attack.mitre.org/techniques/T1200/"}], "evidence": ["ip=192.168.10.77"], "recommendation": "Identify the owner; add to inventory or disconnect (802.1X / port security)."}]</script>
+<script>
+(function () {
+  "use strict";
+  var L = {"showing": "Showing {n} of {total} alerts", "no_match": "No alert matches the current filters.", "none": "No alerts — nothing suspicious matched the active rules.", "collapse": "Collapse all", "expand": "Expand all", "copied": "Copied", "theme_light": "Switch to light theme", "theme_dark": "Switch to dark theme"};
+  var RANK = { critical: 4, high: 3, medium: 2, low: 1, info: 0 };
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+
+  var queue = $("#queue"), items = $$(".alert", queue), input = $("#q"),
+      sortSel = $("#sort"), countEl = $("#count"), emptyEl = $("#empty"),
+      chips = $$("[data-sev-filter]");
+
+  var state = { q: "", sev: "all", sort: "sev" };
+
+  /* ---------------------------------------------------------- helpers */
+  function plural(n, one, many) { return n === 1 ? one : many.replace("{n}", n); }
+
+  function fmtCount() {
+    var n = shownCount();
+    var tpl = L.showing;
+    return tpl.replace("{n}", n).replace("{total}", items.length);
+  }
+  function shownCount() { return items.filter(function (el) { return !el.hidden; }).length; }
+
+  /* ---------------------------------------------------------- filter + sort */
+  function apply() {
+    var q = state.q.trim().toLowerCase();
+    items.forEach(function (el) {
+      var okSev = state.sev === "all" || el.dataset.sev === state.sev;
+      var okQ = !q || el.dataset.s.indexOf(q) !== -1;
+      el.hidden = !(okSev && okQ);
+      if (el.hidden && el.open) el.open = false;
+    });
+
+    var sorted = items.slice().sort(function (a, b) {
+      if (state.sort === "sev") return (RANK[b.dataset.sev] - RANK[a.dataset.sev]) ||
+        (+a.dataset.ts - +b.dataset.ts);
+      if (state.sort === "time") return +a.dataset.ts - +b.dataset.ts;
+      if (state.sort === "count") return +b.dataset.count - +a.dataset.count;
+      return a.dataset.rule.localeCompare(b.dataset.rule) ||
+        (RANK[b.dataset.sev] - RANK[a.dataset.sev]);
+    });
+    sorted.forEach(function (el) { queue.appendChild(el); });
+
+    chips.forEach(function (c) {
+      c.setAttribute("aria-pressed", String(c.dataset.sevFilter === state.sev));
+    });
+    countEl.textContent = fmtCount();
+    var empty = shownCount() === 0;
+    emptyEl.hidden = !empty;
+    if (empty) {
+      emptyEl.querySelector("h3").textContent = items.length ? L.no_match : L.none;
+    }
+    writeHash();
+  }
+
+  /* ---------------------------------------------------------- url state */
+  function writeHash() {
+    var p = [];
+    if (state.q) p.push("q=" + encodeURIComponent(state.q));
+    if (state.sev !== "all") p.push("sev=" + state.sev);
+    if (state.sort !== "sev") p.push("sort=" + state.sort);
+    if (!p.length) return;
+    try { history.replaceState(null, "", "#" + p.join("&")); } catch (e) {}
+  }
+  function readHash() {
+    var h = location.hash.slice(1);
+    if (h.indexOf("=") === -1) return;
+    h.split("&").forEach(function (kv) {
+      var i = kv.indexOf("="); if (i < 0) return;
+      var k = kv.slice(0, i), v = decodeURIComponent(kv.slice(i + 1));
+      if (k === "q") state.q = v;
+      else if (k === "sev" && (v === "all" || RANK[v] !== undefined)) state.sev = v;
+      else if (k === "sort" && ["sev", "time", "count", "rule"].indexOf(v) >= 0) state.sort = v;
+    });
+    input.value = state.q;
+    sortSel.value = state.sort;
+  }
+
+  /* ---------------------------------------------------------- events */
+  var deb;
+  input.addEventListener("input", function () {
+    clearTimeout(deb);
+    deb = setTimeout(function () { state.q = input.value; apply(); }, 110);
+  });
+
+  chips.forEach(function (c) {
+    c.addEventListener("click", function () {
+      state.sev = (state.sev === c.dataset.sevFilter && c.dataset.sevFilter !== "all")
+        ? "all" : c.dataset.sevFilter;
+      apply();
+    });
+  });
+
+  sortSel.addEventListener("change", function () { state.sort = sortSel.value; apply(); });
+
+  var btnExpand = $("#btn-expand");
+  btnExpand.addEventListener("click", function () {
+    var anyClosed = items.some(function (el) { return !el.hidden && !el.open; });
+    items.forEach(function (el) { if (!el.hidden) el.open = anyClosed; });
+    var txt = anyClosed ? L.collapse : L.expand;
+    this.title = txt;
+    this.setAttribute("aria-label", txt);
+    this.classList.toggle("is-open", anyClosed);
+  });
+
+  /* ---------------------------------------------------------- theme */
+  var btnTheme = $("#btn-theme");
+  function setTheme(t) {
+    document.documentElement.setAttribute("data-theme", t);
+    if (!document.documentElement.hasAttribute("data-theme-pinned")) {
+      try { localStorage.setItem("nw-theme", t); } catch (e) {}
+    }
+    var dark = t === "dark";
+    btnTheme.title = dark ? L.theme_light : L.theme_dark;
+    btnTheme.setAttribute("aria-label", btnTheme.title);
+  }
+  btnTheme.addEventListener("click", function () {
+    setTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  });
+  setTheme(document.documentElement.getAttribute("data-theme") || "dark");
+
+  /* ---------------------------------------------------------- copy + csv */
+  var data = [];
+  try { data = JSON.parse($("#nw-data").textContent); } catch (e) {}
+
+  function copyText(txt, btn) {
+    var done = function () {
+      var old = btn.innerHTML;
+      btn.classList.add("ok");
+      btn.innerHTML = '<svg class="i" aria-hidden="true"><use href="#i-check"/></svg>' + L.copied;
+      setTimeout(function () { btn.innerHTML = old; btn.classList.remove("ok"); }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(done, function () {});
+    } else {
+      var ta = document.createElement("textarea");
+      ta.value = txt; ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand("copy"); done(); } catch (e) {}
+      document.body.removeChild(ta);
+    }
+  }
+
+  $$("[data-copy]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var id = b.dataset.copy;
+      var a = data.filter(function (x) { return x.id === id; })[0];
+      if (a) copyText(JSON.stringify(a, null, 2), b);
+    });
+  });
+
+  function esc(v) {
+    v = v == null ? "" : String(v);
+    return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+  function exportCsv() {
+    var head = ["id", "severity", "rule", "title", "source", "count", "first_seen", "last_seen",
+                "mitre", "description", "recommendation"];
+    var rows = data.filter(function (a) {
+      var el = document.getElementById(a.id);
+      return !el || !el.hidden;
+    }).map(function (a) {
+      return [a.id, a.severity, a.rule, a.title, a.src, a.count, a.first_seen, a.last_seen,
+              (a.mitre || []).map(function (m) { return m.id; }).join(" "),
+              a.description, a.recommendation].map(esc).join(",");
+    });
+    var blob = new Blob(["\uFEFF" + [head.join(",")].concat(rows).join("\r\n")],
+                        { type: "text/csv;charset=utf-8" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "netwatch-alerts.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 4000);
+  }
+  $("#btn-csv").addEventListener("click", exportCsv);
+
+  /* ---------------------------------------------------------- print */
+  $("#btn-print").addEventListener("click", function () { window.print(); });
+  window.addEventListener("beforeprint", function () {
+    items.forEach(function (el) { el.dataset.wasOpen = el.open ? "1" : ""; el.open = true; });
+  });
+  window.addEventListener("afterprint", function () {
+    items.forEach(function (el) { el.open = el.dataset.wasOpen === "1"; });
+  });
+
+  /* ---------------------------------------------------------- dialog */
+  var dlg = $("#dlg-help");
+  function openHelp() { if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open", ""); }
+  function closeHelp() { if (dlg.close) dlg.close(); else dlg.removeAttribute("open"); }
+  $("#btn-help").addEventListener("click", openHelp);
+  $$("[data-close]", dlg).forEach(function (b) { b.addEventListener("click", closeHelp); });
+  dlg.addEventListener("click", function (e) { if (e.target === dlg) closeHelp(); });
+
+  /* ---------------------------------------------------------- keyboard */
+  document.addEventListener("keydown", function (e) {
+    var t = e.target, typing = t && (t.tagName === "INPUT" || t.tagName === "SELECT" || t.tagName === "TEXTAREA");
+    if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+    if (e.key === "Escape") {
+      if (dlg.open) { closeHelp(); return; }
+      if (typing && t.id === "q") { t.value = ""; state.q = ""; apply(); t.blur(); return; }
+      if (state.q || state.sev !== "all") { state.q = ""; input.value = ""; state.sev = "all"; apply(); }
+      return;
+    }
+    if (typing) return;
+
+    if (e.key === "/") { e.preventDefault(); input.focus(); input.select(); return; }
+    if (e.key === "?") { e.preventDefault(); openHelp(); return; }
+    if (e.key >= "0" && e.key <= "5") {
+      var order = ["info", "low", "medium", "high", "critical"];
+      state.sev = e.key === "0" ? "all" : order[+e.key - 1];
+      apply();
+      var first = items.filter(function (el) { return !el.hidden; })[0];
+      if (first) first.scrollIntoView({ block: "center", behavior: "smooth" });
+      return;
+    }
+    if (e.key === "t") { btnTheme.click(); return; }
+    if (e.key === "c") { exportCsv(); return; }
+    if (e.key === "e") { $("#btn-expand").click(); return; }
+  });
+
+  /* ---------------------------------------------------------- boot */
+  readHash();
+  apply();
+  if (location.hash && location.hash.indexOf("=") === -1) {
+    var target = document.getElementById(location.hash.slice(1));
+    if (target) {
+      if (target.tagName === "DETAILS") target.open = true;
+      setTimeout(function () { target.scrollIntoView({ block: "start" }); }, 60);
+    }
+  }
+})();
+</script>
+</body>
+</html>

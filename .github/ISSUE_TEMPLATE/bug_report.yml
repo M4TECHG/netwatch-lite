@@ -1,0 +1,76 @@
+name: Bug report
+description: A detection fired wrongly, the analyser crashed, or the report looks broken
+title: "[bug] "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. **Security issues go to [the security policy](../SECURITY.md)
+        instead — do not post exploits or real captures here.**
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `netwatch --version`
+      placeholder: netwatch-lite 0.1.0
+    validations:
+      required: true
+  - type: input
+    id: python
+    attributes:
+      label: Python version
+      placeholder: "3.11.0"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What went wrong?
+      options:
+        - Detection fired on normal traffic (false positive)
+        - A real attack was missed (false negative)
+        - Crash / traceback / hang
+        - HTML report renders badly (layout, RTL, dark mode, accessibility)
+        - CLI behaves unexpectedly
+        - Something else
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: What happened instead?
+      description: Paste the console output (redact hostnames, users and public IPs).
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: |
+        The exact commands you ran. Prefer `netwatch demo` or a **synthetic** PCAP.
+        Never attach a real capture or authentication log.
+      render: bash
+    validations:
+      required: true
+  - type: textarea
+    id: rules
+    attributes:
+      label: Your rules / thresholds
+      description: If you changed `rules/default.yaml`, paste the relevant part.
+      render: yaml
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and the roadmap in the README
+          required: true
+        - label: This report contains no real network captures, logs or secrets
+          required: true
