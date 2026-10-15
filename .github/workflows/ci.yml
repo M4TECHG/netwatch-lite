@@ -52,7 +52,7 @@ jobs:
           code=$?
           set -e
           test "$code" -eq 2
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: pytest-py${{ matrix.python }}
@@ -76,12 +76,12 @@ jobs:
       - name: Screenshot light / dark / phone for visual review
         if: always()
         run: python scripts/check_report.py demo_output/report.html --shots _shots
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: demo-report
           path: demo_output/report.html
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: report-screenshots
